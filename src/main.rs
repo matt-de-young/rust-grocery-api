@@ -12,8 +12,10 @@ extern crate serde_derive;
 
 use dotenv::dotenv;
 
-mod post;
+
 mod item;
+mod post;
+mod user;
 mod schema;
 mod connection;
 
@@ -21,7 +23,12 @@ fn main() {
     dotenv().ok();
     rocket::ignite()
         .manage(connection::init_pool())
-        .mount("/items",
+        .mount("/",
+            routes![
+                user::handler::signup,
+                user::handler::login,
+            ],
+        ).mount("/items",
             routes![
                 item::handler::all_items,
                 item::handler::create_item,

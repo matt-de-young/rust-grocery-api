@@ -17,7 +17,18 @@ table! {
     }
 }
 
+table! {
+    users (id) {
+        id -> Int4,
+        username -> Varchar,
+        email -> Varchar,
+        password -> Varchar,
+        login_session -> Nullable<Varchar>,
+    }
+}
+
 allow_tables_to_appear_in_same_query!(
     items,
     posts,
+    users,
 );
