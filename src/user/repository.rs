@@ -1,15 +1,15 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 
 use bcrypt::{hash, verify, DEFAULT_COST};
-use jsonwebtoken::TokenData;
 use diesel;
 use diesel::prelude::*;
+use jsonwebtoken::TokenData;
 use uuid::Uuid;
 
-use crate::user::model::User;
-use crate::user::model::NewUser;
 use crate::user::model::LoginCredentials;
 use crate::user::model::LoginSession;
+use crate::user::model::NewUser;
+use crate::user::model::User;
 use crate::user::model::UserToken;
 
 use crate::schema::users;
@@ -48,9 +48,9 @@ pub fn login(login: LoginCredentials, conn: &PgConnection) -> Option<LoginSessio
 
 pub fn update_login_session(user: &User, update_login_session: &str, conn: &PgConnection) -> bool {
     diesel::update(user)
-    .set(login_session.eq(update_login_session.to_string()))
-    .execute(conn)
-    .is_ok()
+        .set(login_session.eq(update_login_session.to_string()))
+        .execute(conn)
+        .is_ok()
 }
 
 pub fn is_valid_login_session(user_token: &UserToken, conn: &PgConnection) -> bool {

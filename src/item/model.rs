@@ -13,7 +13,7 @@ pub struct Item {
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
-#[table_name="items"]
+#[table_name = "items"]
 pub struct NewItem {
     pub body: String,
     pub description: Option<String>,

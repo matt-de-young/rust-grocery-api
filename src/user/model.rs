@@ -3,16 +3,15 @@
 use chrono::Utc;
 use jsonwebtoken::errors::Result;
 use jsonwebtoken::TokenData;
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use jsonwebtoken::{Header, Validation};
-use jsonwebtoken::{EncodingKey, DecodingKey};
-use rocket::Outcome;
 use rocket::http::Status;
-use rocket::request::{self, Request, FromRequest};
+use rocket::request::{self, FromRequest, Request};
+use rocket::Outcome;
 
 use crate::connection::DbConn;
 use crate::schema::users;
 use crate::user::repository::verify_token;
-
 
 static ONE_WEEK: i64 = 60 * 60 * 24 * 7; // in seconds
 
@@ -23,21 +22,21 @@ pub struct User {
     pub username: String,
     pub email: String,
     pub password: String,
-    pub login_session: Option<String>
+    pub login_session: Option<String>,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
-#[table_name="users"]
+#[table_name = "users"]
 pub struct NewUser {
     pub username: String,
     pub email: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginCredentials {
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
@@ -49,8 +48,8 @@ pub struct LoginSession {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserToken {
-    pub iat: i64,    // issued at
-    pub exp: i64,    // expiration
+    pub iat: i64, // issued at
+    pub exp: i64, // expiration
     pub user: String,
     pub login_session: String,
 }
@@ -60,7 +59,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserToken {
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<UserToken, ()> {
         let conn = request.guard::<DbConn>().unwrap();
-        if let Some(auth_header) = request.headers().get_one("Authorization") {    
+        if let Some(auth_header) = request.headers().get_one("Authorization") {
             let auth_str = auth_header.to_string();
             if auth_str.starts_with("Bearer") {
                 let token = auth_str[6..auth_str.len()].trim();
@@ -68,7 +67,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for UserToken {
                     if verify_token(&token_data, &conn) {
                         return Outcome::Success(token_data.claims);
                     }
-                } 
+                }
             }
         }
 
@@ -85,17 +84,26 @@ pub fn generate_token(login: LoginSession) -> ResponseToken {
         login_session: login.login_session,
     };
     ResponseToken {
-        token: jsonwebtoken::encode(&Header::default(), &payload, &EncodingKey::from_secret(include_bytes!("../secret.key"))).unwrap(),
-        r#type: "Bearer".to_string()
+        token: jsonwebtoken::encode(
+            &Header::default(),
+            &payload,
+            &EncodingKey::from_secret(include_bytes!("../secret.key")),
+        )
+        .unwrap(),
+        r#type: "Bearer".to_string(),
     }
 }
 
 fn decode_token(token: String) -> Result<TokenData<UserToken>> {
-    jsonwebtoken::decode::<UserToken>(&token, &DecodingKey::from_secret(include_bytes!("../secret.key")), &Validation::default())
+    jsonwebtoken::decode::<UserToken>(
+        &token,
+        &DecodingKey::from_secret(include_bytes!("../secret.key")),
+        &Validation::default(),
+    )
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseToken {
     pub token: String,
-    pub r#type: String
+    pub r#type: String,
 }

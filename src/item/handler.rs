@@ -17,13 +17,15 @@ pub fn all_items(connection: DbConn) -> Result<Json<Vec<Item>>, Status> {
         .map_err(|error| error_status(error))
 }
 
-#[post("/", format ="application/json", data = "<new_item>")]
-pub fn create_item(new_item: Json<NewItem>, connection: DbConn) ->  Result<status::Created<Json<Item>>, Status> {
-    println!("here 0 {}",&new_item.body);
+#[post("/", format = "application/json", data = "<new_item>")]
+pub fn create_item(
+    new_item: Json<NewItem>,
+    connection: DbConn,
+) -> Result<status::Created<Json<Item>>, Status> {
+    println!("here 0 {}", &new_item.body);
     item::repository::create_item(new_item.into_inner(), &connection)
         .map(|item| item_created(item))
         .map_err(|error| error_status(error))
-
 }
 
 #[get("/<id>")]
@@ -47,12 +49,18 @@ pub fn delete_item(id: i32, connection: DbConn) -> Result<status::NoContent, Sta
         .map_err(|error| error_status(error))
 }
 
-
 fn item_created(item: Item) -> status::Created<Json<Item>> {
     println!("here final");
     status::Created(
-        format!("{host}:{port}/item/{id}", host = host(), port = port(), id = item.id).to_string(),
-        Some(Json(item)))
+        format!(
+            "{host}:{port}/item/{id}",
+            host = host(),
+            port = port(),
+            id = item.id
+        )
+        .to_string(),
+        Some(Json(item)),
+    )
 }
 
 fn host() -> String {
@@ -66,6 +74,6 @@ fn port() -> String {
 fn error_status(error: Error) -> Status {
     match error {
         Error::NotFound => Status::NotFound,
-        _ => Status::InternalServerError
+        _ => Status::InternalServerError,
     }
 }

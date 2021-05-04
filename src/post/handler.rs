@@ -6,26 +6,29 @@ use rocket::response::status;
 use rocket_contrib::json::Json;
 
 use crate::connection::DbConn;
-use crate::user::model::UserToken;
 use crate::post;
-use crate::post::model::Post;
 use crate::post::model::NewPost;
+use crate::post::model::Post;
+use crate::user::model::UserToken;
 
 #[get("/")]
 pub fn all_posts(token: UserToken, connection: DbConn) -> Result<Json<Vec<Post>>, Status> {
-    println!("Getting posts for user {}",&token.user);
+    println!("Getting posts for user {}", &token.user);
     post::repository::show_posts(&connection)
         .map(|post| Json(post))
         .map_err(|error| error_status(error))
 }
 
-#[post("/", format ="application/json", data = "<new_post>")]
-pub fn create_post(token: UserToken, new_post: Json<NewPost>, connection: DbConn) ->  Result<status::Created<Json<Post>>, Status> {
-    println!("here 0 {}",&new_post.title);
+#[post("/", format = "application/json", data = "<new_post>")]
+pub fn create_post(
+    token: UserToken,
+    new_post: Json<NewPost>,
+    connection: DbConn,
+) -> Result<status::Created<Json<Post>>, Status> {
+    println!("here 0 {}", &new_post.title);
     post::repository::create_post(new_post.into_inner(), &connection)
         .map(|post| post_created(post))
         .map_err(|error| error_status(error))
-
 }
 
 #[get("/<id>")]
@@ -36,25 +39,40 @@ pub fn get_post(token: UserToken, id: i32, connection: DbConn) -> Result<Json<Po
 }
 
 #[put("/<id>", format = "application/json", data = "<post>")]
-pub fn update_post(token: UserToken, id: i32, post: Json<Post>, connection: DbConn) -> Result<Json<Post>, Status> {
+pub fn update_post(
+    token: UserToken,
+    id: i32,
+    post: Json<Post>,
+    connection: DbConn,
+) -> Result<Json<Post>, Status> {
     post::repository::update_post(id, post.into_inner(), &connection)
         .map(|post| Json(post))
         .map_err(|error| error_status(error))
 }
 
 #[delete("/<id>")]
-pub fn delete_post(token: UserToken, id: i32, connection: DbConn) -> Result<status::NoContent, Status> {
+pub fn delete_post(
+    token: UserToken,
+    id: i32,
+    connection: DbConn,
+) -> Result<status::NoContent, Status> {
     post::repository::delete_post(id, &connection)
         .map(|_| status::NoContent)
         .map_err(|error| error_status(error))
 }
 
-
 fn post_created(post: Post) -> status::Created<Json<Post>> {
     println!("here final");
     status::Created(
-        format!("{host}:{port}/post/{id}", host = host(), port = port(), id = post.id).to_string(),
-        Some(Json(post)))
+        format!(
+            "{host}:{port}/post/{id}",
+            host = host(),
+            port = port(),
+            id = post.id
+        )
+        .to_string(),
+        Some(Json(post)),
+    )
 }
 
 fn host() -> String {
@@ -68,6 +86,6 @@ fn port() -> String {
 fn error_status(error: Error) -> Status {
     match error {
         Error::NotFound => Status::NotFound,
-        _ => Status::InternalServerError
+        _ => Status::InternalServerError,
     }
 }
