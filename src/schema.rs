@@ -5,6 +5,7 @@ table! {
         description -> Nullable<Varchar>,
         quantity -> Int4,
         complete -> Bool,
+        user_id -> Int4,
     }
 }
 
@@ -27,4 +28,10 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(items, posts, users,);
+joinable!(items -> users (id));
+
+allow_tables_to_appear_in_same_query!(
+    items,
+    posts,
+    users,
+);

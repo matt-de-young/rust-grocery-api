@@ -11,6 +11,7 @@ use rocket::Outcome;
 
 use crate::connection::DbConn;
 use crate::schema::users;
+use crate::user::repository::get_user;
 use crate::user::repository::verify_token;
 
 static ONE_WEEK: i64 = 60 * 60 * 24 * 7; // in seconds
@@ -23,6 +24,30 @@ pub struct User {
     pub email: String,
     pub password: String,
     pub login_session: Option<String>,
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for User {
+    type Error = ();
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<User, ()> {
+        let conn = request.guard::<DbConn>().unwrap();
+        if let Some(auth_header) = request.headers().get_one("Authorization") {
+            let auth_str = auth_header.to_string();
+            if auth_str.starts_with("Bearer") {
+                let token = auth_str[6..auth_str.len()].trim();
+                if let Ok(token_data) = decode_token(token.to_string()) {
+                    if verify_token(&token_data, &conn) {
+                        match get_user(token_data.claims.user, &conn) {
+                            Ok(v) => return Outcome::Success(v),
+                            Err(_e) => return Outcome::Failure((Status::Unauthorized, ())),
+                        }
+                    }
+                }
+            }
+        }
+
+        Outcome::Failure((Status::Unauthorized, ()))
+    }
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
@@ -39,10 +64,9 @@ pub struct LoginCredentials {
     pub password: String,
 }
 
-#[derive(Insertable, Serialize, Deserialize)]
-#[table_name = "users"]
+#[derive(Serialize, Deserialize)]
 pub struct LoginSession {
-    pub username: String,
+    pub user_id: i32,
     pub login_session: String,
 }
 
@@ -50,29 +74,8 @@ pub struct LoginSession {
 pub struct UserToken {
     pub iat: i64, // issued at
     pub exp: i64, // expiration
-    pub user: String,
+    pub user: i32,
     pub login_session: String,
-}
-
-impl<'a, 'r> FromRequest<'a, 'r> for UserToken {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<UserToken, ()> {
-        let conn = request.guard::<DbConn>().unwrap();
-        if let Some(auth_header) = request.headers().get_one("Authorization") {
-            let auth_str = auth_header.to_string();
-            if auth_str.starts_with("Bearer") {
-                let token = auth_str[6..auth_str.len()].trim();
-                if let Ok(token_data) = decode_token(token.to_string()) {
-                    if verify_token(&token_data, &conn) {
-                        return Outcome::Success(token_data.claims);
-                    }
-                }
-            }
-        }
-
-        Outcome::Failure((Status::Unauthorized, ()))
-    }
 }
 
 pub fn generate_token(login: LoginSession) -> ResponseToken {
@@ -80,7 +83,7 @@ pub fn generate_token(login: LoginSession) -> ResponseToken {
     let payload = UserToken {
         iat: now,
         exp: now + ONE_WEEK,
-        user: login.username,
+        user: login.user_id,
         login_session: login.login_session,
     };
     ResponseToken {

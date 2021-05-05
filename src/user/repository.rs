@@ -38,7 +38,7 @@ pub fn login(login: LoginCredentials, conn: &PgConnection) -> Option<LoginSessio
         let login_session_str = Uuid::new_v4().to_simple().to_string();
         update_login_session(&user_to_verify, &login_session_str, conn);
         Some(LoginSession {
-            username: user_to_verify.username,
+            user_id: user_to_verify.id,
             login_session: login_session_str,
         })
     } else {
@@ -55,7 +55,7 @@ pub fn update_login_session(user: &User, update_login_session: &str, conn: &PgCo
 
 pub fn is_valid_login_session(user_token: &UserToken, conn: &PgConnection) -> bool {
     users
-        .filter(username.eq(&user_token.user))
+        .filter(id.eq(&user_token.user))
         .filter(login_session.eq(&user_token.login_session))
         .get_result::<User>(conn)
         .is_ok()
@@ -63,4 +63,8 @@ pub fn is_valid_login_session(user_token: &UserToken, conn: &PgConnection) -> bo
 
 pub fn verify_token(token_data: &TokenData<UserToken>, conn: &PgConnection) -> bool {
     is_valid_login_session(&token_data.claims, conn)
+}
+
+pub fn get_user(user_id: i32, connection: &PgConnection) -> QueryResult<User> {
+    users::table.find(user_id).get_result::<User>(connection)
 }

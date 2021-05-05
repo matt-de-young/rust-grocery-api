@@ -9,42 +9,50 @@ use crate::connection::DbConn;
 use crate::item;
 use crate::item::model::Item;
 use crate::item::model::NewItem;
+use crate::user::model::User;
 
 #[get("/")]
-pub fn all_items(connection: DbConn) -> Result<Json<Vec<Item>>, Status> {
-    item::repository::show_items(&connection)
+pub fn all_items(user: User, connection: DbConn) -> Result<Json<Vec<Item>>, Status> {
+    println!("Getting items for user {}", &user.username);
+    item::repository::list_items(user, &connection)
         .map(|item| Json(item))
         .map_err(|error| error_status(error))
 }
 
 #[post("/", format = "application/json", data = "<new_item>")]
 pub fn create_item(
+    user: User,
     new_item: Json<NewItem>,
     connection: DbConn,
 ) -> Result<status::Created<Json<Item>>, Status> {
     println!("here 0 {}", &new_item.body);
-    item::repository::create_item(new_item.into_inner(), &connection)
+    item::repository::create_item(new_item.into_inner(), user, &connection)
         .map(|item| item_created(item))
         .map_err(|error| error_status(error))
 }
 
 #[get("/<id>")]
-pub fn get_item(id: i32, connection: DbConn) -> Result<Json<Item>, Status> {
-    item::repository::get_item(id, &connection)
+pub fn get_item(id: i32, user: User, connection: DbConn) -> Result<Json<Item>, Status> {
+    item::repository::get_item(id, Some(user), &connection)
         .map(|item| Json(item))
         .map_err(|error| error_status(error))
 }
 
 #[put("/<id>", format = "application/json", data = "<item>")]
-pub fn update_item(id: i32, item: Json<Item>, connection: DbConn) -> Result<Json<Item>, Status> {
-    item::repository::update_item(id, item.into_inner(), &connection)
+pub fn update_item(
+    id: i32,
+    item: Json<Item>,
+    user: User,
+    connection: DbConn,
+) -> Result<Json<Item>, Status> {
+    item::repository::update_item(id, item.into_inner(), Some(user), &connection)
         .map(|item| Json(item))
         .map_err(|error| error_status(error))
 }
 
 #[delete("/<id>")]
-pub fn delete_item(id: i32, connection: DbConn) -> Result<status::NoContent, Status> {
-    item::repository::delete_item(id, &connection)
+pub fn delete_item(id: i32, user: User, connection: DbConn) -> Result<status::NoContent, Status> {
+    item::repository::delete_item(id, Some(user), &connection)
         .map(|_| status::NoContent)
         .map_err(|error| error_status(error))
 }

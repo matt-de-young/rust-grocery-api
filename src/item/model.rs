@@ -2,7 +2,7 @@
 
 use crate::schema::items;
 
-#[derive(Queryable, AsChangeset, Serialize, Deserialize, Debug)]
+#[derive(Identifiable, Queryable, AsChangeset, Serialize, Deserialize, Debug)]
 #[table_name = "items"]
 pub struct Item {
     pub id: i32,
@@ -10,6 +10,7 @@ pub struct Item {
     pub description: Option<String>,
     pub quantity: i32,
     pub complete: bool,
+    pub user_id: i32,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]

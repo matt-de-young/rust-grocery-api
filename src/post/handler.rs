@@ -9,11 +9,9 @@ use crate::connection::DbConn;
 use crate::post;
 use crate::post::model::NewPost;
 use crate::post::model::Post;
-use crate::user::model::UserToken;
 
 #[get("/")]
-pub fn all_posts(token: UserToken, connection: DbConn) -> Result<Json<Vec<Post>>, Status> {
-    println!("Getting posts for user {}", &token.user);
+pub fn all_posts(connection: DbConn) -> Result<Json<Vec<Post>>, Status> {
     post::repository::show_posts(&connection)
         .map(|post| Json(post))
         .map_err(|error| error_status(error))
@@ -21,41 +19,30 @@ pub fn all_posts(token: UserToken, connection: DbConn) -> Result<Json<Vec<Post>>
 
 #[post("/", format = "application/json", data = "<new_post>")]
 pub fn create_post(
-    token: UserToken,
     new_post: Json<NewPost>,
     connection: DbConn,
 ) -> Result<status::Created<Json<Post>>, Status> {
-    println!("here 0 {}", &new_post.title);
     post::repository::create_post(new_post.into_inner(), &connection)
         .map(|post| post_created(post))
         .map_err(|error| error_status(error))
 }
 
 #[get("/<id>")]
-pub fn get_post(token: UserToken, id: i32, connection: DbConn) -> Result<Json<Post>, Status> {
+pub fn get_post(id: i32, connection: DbConn) -> Result<Json<Post>, Status> {
     post::repository::get_post(id, &connection)
         .map(|post| Json(post))
         .map_err(|error| error_status(error))
 }
 
 #[put("/<id>", format = "application/json", data = "<post>")]
-pub fn update_post(
-    token: UserToken,
-    id: i32,
-    post: Json<Post>,
-    connection: DbConn,
-) -> Result<Json<Post>, Status> {
+pub fn update_post(id: i32, post: Json<Post>, connection: DbConn) -> Result<Json<Post>, Status> {
     post::repository::update_post(id, post.into_inner(), &connection)
         .map(|post| Json(post))
         .map_err(|error| error_status(error))
 }
 
 #[delete("/<id>")]
-pub fn delete_post(
-    token: UserToken,
-    id: i32,
-    connection: DbConn,
-) -> Result<status::NoContent, Status> {
+pub fn delete_post(id: i32, connection: DbConn) -> Result<status::NoContent, Status> {
     post::repository::delete_post(id, &connection)
         .map(|_| status::NoContent)
         .map_err(|error| error_status(error))
