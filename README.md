@@ -1,3 +1,13 @@
+# Groceries API
+
+TODO lists as starter projects are everywhere, which is why I made something completely different. 
+
+This API manages items users need to buy at the grocery store. Authentication is handled with JWTs and users can only see their own grocery list.
+
+This is still very much a work in progress.
+
+## Getting started
+
 Use docker compose to start a postgres server:
 ```
 docker compose up -d
